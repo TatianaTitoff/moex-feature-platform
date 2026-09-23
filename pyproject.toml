@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "moex-feature-platform"
+version = "0.1.0"
+description = "Feature engineering and machine learning platform based on MOEX ISS API data."
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31,<3",
+    "pandas>=2.0,<3",
+    "pyarrow>=17,<22",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

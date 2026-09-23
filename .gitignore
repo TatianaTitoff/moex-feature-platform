@@ -13,7 +13,7 @@ develop-eggs/
 dist/
 downloads/
 eggs/
-.eggs/
+.eggs/v
 lib/
 lib64/
 parts/
@@ -216,3 +216,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local MOEX datasets
+/data/raw/
+/data/processed/
+
+# IDE local settings
+.idea/
+.vscode/

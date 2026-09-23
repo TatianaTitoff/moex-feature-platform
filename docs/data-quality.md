@@ -115,3 +115,12 @@ The current checks cover:
 - unexpected columns.
 
 The validation layer reports data quality results separately from data transformation or cleaning.
+
+## Source Completeness
+
+The pipeline compares the number of received history rows with
+the TOTAL value reported by the MOEX ISS pagination cursor.
+
+A mismatch is recorded as `pagination_mismatch = 1`.
+
+Incomplete datasets must not be published to the processed layer.

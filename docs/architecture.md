@@ -140,3 +140,24 @@ The exact storage technologies and processing mechanisms may evolve as the proje
 The initial implementation focuses on building a reliable data pipeline and preparing the foundation for ML experiments.
 
 Advanced production infrastructure, distributed processing and automated deployment are not required at the initial stage and will be introduced only when justified by the project requirements.
+
+## Historical Ingestion
+
+Historical MOEX ISS data is ingested by calendar date.
+
+For each date, the pipeline:
+
+1. Checks whether the processed Parquet file already exists.
+2. Skips previously processed dates unless forced reloading is requested.
+3. Retrieves all available API pages.
+4. Saves the original response pages in the RAW layer.
+5. Normalizes the data and runs data quality checks.
+6. Saves validated records as date-specific Parquet files.
+
+Dates with an empty history response receive the `no_data` status.
+No processed Parquet file is created for these dates.
+
+The current implementation does not persist ingestion statuses between runs.
+Dates without processed files may therefore be checked again.
+
+This is an intentional simplification for the initial local implementation.

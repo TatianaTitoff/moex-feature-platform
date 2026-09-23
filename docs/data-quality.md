@@ -124,3 +124,137 @@ the TOTAL value reported by the MOEX ISS pagination cursor.
 A mismatch is recorded as `pagination_mismatch = 1`.
 
 Incomplete datasets must not be published to the processed layer.
+
+## July–August 2026 Observations
+
+- July: 23 trading dates, 4,600 records.
+- August: 21 trading dates, 4,200 records.
+- Both months contain 200 records per trading date.
+- The August dataset contains 473 records with actual trades.
+- Most historical records describe instruments without trades on that date.
+
+Pagination completeness has been verified for the requested dataset.
+Completeness of the instrument universe requires separate validation.
+
+## DQ Incident: Missing WAPRICE on 2026-03-20
+
+### Context
+
+During the historical backfill for January–June 2026, the pipeline
+detected a data quality violation on 2026-03-20.
+
+The backfill returned:
+
+- success: 122 dates
+- no_data: 58 dates
+- dq_failed: 1 date
+
+### Detected Issue
+
+The MOEX ISS API returned 201 history records for 2026-03-20.
+
+The daily DQ report recorded:
+
+| Metric | Value |
+|---|---:|
+| row_count | 201 |
+| source_total_rows | 201 |
+| pagination_mismatch | 0 |
+| duplicate_rows | 0 |
+| duplicate_secid_trade_date | 0 |
+| trades_without_waprice | 1 |
+| no_trades_with_waprice | 0 |
+
+One instrument had `NUMTRADES > 0` while `WAPRICE` was missing.
+
+The pagination completeness check passed, indicating that the number
+of retrieved records matched the total reported by the API.
+
+### Pipeline Behavior
+
+The pipeline:
+
+1. Saved the original MOEX ISS response pages in RAW JSON.
+2. Saved the daily DQ report.
+3. Returned `dq_failed` for 2026-03-20.
+4. Did not publish processed Parquet for the affected date.
+5. Continued processing subsequent calendar dates.
+
+The incident did not stop the entire historical backfill.
+
+### Investigation Findings
+
+The affected instrument was identified as BYNRUBTODTOM,
+a Belarusian rouble FX swap.
+
+Neighboring trading dates were examined:
+
+| Date | NUMTRADES | WAPRICE |
+|---|---:|---:|
+| 2026-03-19 | 3 | 0.0011 |
+| 2026-03-20 | 3 | null |
+| 2026-03-23 | 3 | 0.0043 |
+
+Zero values were also observed in the OHLC fields on neighboring
+dates with valid WAPRICE values.
+
+Therefore, zero prices must not be automatically interpreted
+as missing data.
+
+The exact reason for the missing WAPRICE on 2026-03-20
+remains unconfirmed.
+
+### Resolution
+
+The affected instrument was identified as BYNRUBTODTOM,
+a Belarusian rouble FX swap.
+
+The record contains three trades, zero OHLC values and missing WAPRICE.
+The exact reason for the missing WAPRICE remains unconfirmed.
+
+The DQ policy was updated:
+
+- Pagination mismatch and duplicate business keys remain blocking errors.
+- Missing WAPRICE with NUMTRADES > 0 is treated as a warning.
+- The original record is preserved without imputing the missing price.
+- A warning does not prevent publication of other observations for the date.
+
+After reprocessing, `2026-03-20` was published with:
+
+- status: success_with_warnings
+- row_count: 201
+- trades_without_waprice: 1
+- pagination_mismatch: 0
+
+### Lessons Learned
+
+- A successful API request does not guarantee valid business data.
+- Pagination completeness and semantic data quality are separate checks.
+- A single date-level DQ failure can be isolated without stopping
+  the entire backfill.
+- DQ reports and original RAW responses are necessary for investigating
+  historical data anomalies.
+
+  ### Affected Record
+
+The investigation identified the following MOEX ISS history record:
+
+| Field | Value |
+|---|---|
+| TRADEDATE | 2026-03-20 |
+| SECID | BYNRUBTODTOM |
+| SHORTNAME | BYN_TODTOM |
+| NUMTRADES | 3 |
+| OPEN | 0 |
+| LOW | 0 |
+| HIGH | 0 |
+| CLOSE | 0 |
+| WAPRICE | null |
+
+The record reports three trades but contains no usable price
+information in the retrieved fields.
+
+The existing DQ rule correctly identified the inconsistency.
+
+The root cause has not yet been established. The affected date
+remains excluded from the processed layer pending investigation.

@@ -124,28 +124,53 @@ def ingest_history_date(
     dq_result=dq_result,
     )
 
-        # Проверяем только метрики, описывающие нарушения.
+    # Проверяем только метрики, описывающие нарушения.
     # Количество строк само по себе ошибкой не является.
+    # Критические нарушения запрещают публикацию processed.
     failure_metrics = [
         "duplicate_rows",
         "duplicate_secid_trade_date",
-        "trades_without_waprice",
         "no_trades_with_waprice",
         "pagination_mismatch",
     ]
 
-    if any(dq_result[name] > 0 for name in failure_metrics):
+    # Предупреждения фиксируем, но не блокируем всю дату.
+    warning_metrics = [
+        "trades_without_waprice",
+    ]
+
+    has_failures = any(
+        dq_result[name] > 0
+        for name in failure_metrics
+    )
+
+    has_warnings = any(
+        dq_result[name] > 0
+        for name in warning_metrics
+    )
+
+    if has_failures:
         return {
             "trade_date": trade_date,
             "status": "dq_failed",
             "dq": dq_result,
         }
 
+        # Критических нарушений нет — сохраняем данные в processed.
     save_processed_history(df, output_path)
+
+    # Определяем итоговый статус обработки даты.
+    # Если есть некритические нарушения, отмечаем их в статусе,
+    # но не блокируем публикацию данных.
+    status = (
+        "success_with_warnings"
+        if has_warnings
+        else "success"
+    )
 
     return {
         "trade_date": trade_date,
-        "status": "success",
+        "status": status,
         "row_count": len(df),
         "dq": dq_result,
     }
@@ -193,7 +218,7 @@ def save_history_dq(
 ) -> Path:
     """Save daily data quality metrics as JSON."""
 
-    # Формируем путь к отчёту за конкретную дату.
+    # Путь к ежедневному DQ-отчёту.
     path = Path(
         f"data/quality/moex-fx/history/"
         f"{trade_date[:4]}/{trade_date[5:7]}/"
@@ -201,8 +226,6 @@ def save_history_dq(
     )
 
     # Создаём родительские директории, если их ещё нет.
-    # parents=True — разрешает создать всю цепочку директорий.
-    # exist_ok=True — не считает ошибкой существующую директорию.
     path.parent.mkdir(parents=True, exist_ok=True)
 
     # Формируем содержимое отчёта.
@@ -211,7 +234,7 @@ def save_history_dq(
         **dq_result,
     }
 
-    # Записываем Python-словарь в JSON-файл.
+    # Записываем отчёт в JSON.
     with path.open("w", encoding="utf-8") as file:
         json.dump(
             report,

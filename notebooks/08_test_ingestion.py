@@ -11,7 +11,7 @@ raw_storage = RawStorage()
 result = ingest_history_date(
     client=client,
     raw_storage=raw_storage,
-    trade_date="2026-07-01",
+    trade_date="2026-03-20",
 )
 
 print(result)

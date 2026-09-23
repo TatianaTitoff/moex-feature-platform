@@ -14,11 +14,31 @@ def normalize_history_payload(payload: dict[str, Any]) -> pd.DataFrame:
 
 def normalize_history_pages(
     payloads: list[dict[str, Any]],
-                            ) -> pd.DataFrame:
-    """Convert multiple raw MOEX ISS history pages into one DataFrame."""
-    frames = [
-        normalize_history_payload(payload)
-        for payload in payloads
-    ]
+    ) -> pd.DataFrame:
+    """Convert multiple MOEX ISS history pages into one DataFrame."""
 
-    return pd.concat(frames, ignore_index=True)
+    if not payloads:
+        raise ValueError("No MOEX history pages provided")
+
+    # Названия колонок берём из первой страницы ответа MOEX.
+    columns = payloads[0]["history"]["columns"]
+
+    # Сюда будем собирать строки со всех страниц.
+    rows = []
+
+    for payload in payloads:
+        history = payload["history"]
+
+        # Проверяем, что структура колонок одинакова
+        # на всех страницах одного ответа.
+        if history["columns"] != columns:
+            raise ValueError(
+                "MOEX history columns differ between pages"
+            )
+
+        # extend добавляет в список все элементы другого списка.
+        # В отличие от append, он не создаёт вложенный список.
+        rows.extend(history["data"])
+
+    # Создаём один DataFrame сразу из всех полученных строк.
+    return pd.DataFrame(rows, columns=columns)

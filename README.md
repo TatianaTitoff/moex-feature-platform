@@ -42,11 +42,13 @@ The first implementation will focus on a small number of well-defined use cases.
 
 ## Project Status
 
-🚧 In active development
+🚧 Active development
 
-**Current stage:** Data acquisition
+**Completed:** MOEX ISS ingestion, RAW and processed data layers, historical backfill, pagination checks, retry handling, and data quality validation. More than five years of market history have been collected.
 
-**Next milestone:** Build and validate the first reproducible MOEX data ingestion pipeline.
+**Current stage:** Exploratory analysis of CNYRUB_TOM, formulation of the short-term FX risk problem, and preparation of the ML dataset.
+
+**Next stage:** Feature engineering, time-aware validation, and baseline model development.
 
 ## Documentation
 

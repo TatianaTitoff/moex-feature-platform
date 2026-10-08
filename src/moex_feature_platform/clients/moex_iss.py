@@ -2,6 +2,7 @@ from datetime import date, timedelta
 from typing import Any
 
 import requests
+import time
 
 
 class MoexIssClient:
@@ -123,10 +124,45 @@ class MoexIssClient:
         "iss.meta": "off",
         }
 
-        response = requests.get(url, params=params, timeout=30)
-        response.raise_for_status()
+        # Максимальное число попыток получить одну страницу.
+        max_attempts = 4
 
-        return response.json()
+        for attempt in range(1, max_attempts + 1):
+            try:
+                response = requests.get(
+                    url,
+                    params=params,
+                    timeout=30,
+                    )
+
+                response.raise_for_status()
+
+                return response.json()
+
+            except (
+                requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout,
+            ) as error:
+
+        # Если исчерпали все попытки,
+        # больше не скрываем ошибку.
+                if attempt == max_attempts:
+                    raise
+
+        # Между попытками постепенно увеличиваем паузу:
+        # 1 секунда → 2 секунды → 4 секунды.
+                delay_seconds = 2 ** (attempt - 1)
+
+                print(
+                    f"MOEX request failed "
+                    f"(attempt {attempt}/{max_attempts}): {error}"
+                )
+
+                print(
+                  f"Retrying in {delay_seconds} seconds..."
+                )
+
+                time.sleep(delay_seconds)
 
     def get_history_raw(
         self,

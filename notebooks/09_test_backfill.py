@@ -10,8 +10,8 @@ raw_storage = RawStorage()
 results = ingest_history_range(
     client=client,
     raw_storage=raw_storage,
-    date_from="2026-01-01",
-    date_to="2026-06-30",
+    date_from="2021-09-01",
+    date_to="2026-09-30",
 )
 
 for result in results:
@@ -64,3 +64,32 @@ if failed_dates:
         for name, value in result["dq"].items():
             if name not in ("row_count", "source_total_rows") and value > 0:
                 print(f"  {name}: {value}")
+
+
+warning_results = []
+
+for result in results:
+    if result["status"] == "success_with_warnings":
+        warning_results.append(result)
+
+print("\nWarnings by metric:")
+
+warning_counts = {}
+
+for result in warning_results:
+    dq = result["dq"]
+
+    for metric_name, value in dq.items():
+
+        # Нас интересуют только ненулевые DQ-показатели.
+        if value > 0:
+            if metric_name not in (
+                "row_count",
+                "source_total_rows",
+            ):
+                warning_counts[metric_name] = (
+                    warning_counts.get(metric_name, 0)
+                    + value
+                )
+
+print(warning_counts)

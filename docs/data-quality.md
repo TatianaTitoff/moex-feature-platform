@@ -258,3 +258,35 @@ The existing DQ rule correctly identified the inconsistency.
 
 The root cause has not yet been established. The affected date
 remains excluded from the processed layer pending investigation.
+
+## Historical WAPRICE Warnings
+
+A five-year historical backfill identified 346 observations across
+265 trading dates where `NUMTRADES > 0` but `WAPRICE` was missing.
+
+All affected observations belong to FX TOD/TOM swap instruments.
+
+The most frequently affected instruments were:
+
+- TRYRUBTODTOM: 149 observations
+- KZTRUBTODTOM: 86 observations
+- EURUSDTODTOM: 51 observations
+- GBPRUBTODTOM: 29 observations
+- AMDRUBTODTOM: 20 observations
+
+Warnings were unevenly distributed over time:
+
+- 2022: 39 observations
+- 2023: 80 observations
+- 2024: 226 observations
+- 2026: 1 observation
+
+The exact reason for the missing WAPRICE values has not been
+established.
+
+The observations are preserved without imputation and
+`trades_without_waprice` remains a non-blocking DQ warning.
+
+Regular TOM instruments and TOD/TOM FX swaps should not be
+automatically treated as equivalent instruments in downstream
+ML datasets.

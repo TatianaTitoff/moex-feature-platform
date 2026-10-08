@@ -197,7 +197,10 @@ def ingest_history_range(
     # Последовательно обрабатываем каждый календарный день,
     # включая выходные и праздники.
     while current_date <= end_date:
-
+        print(
+            "Processing:",
+            current_date.isoformat(),
+            )
         result = ingest_history_date(
             client=client,
             raw_storage=raw_storage,
